@@ -81,7 +81,7 @@ function! C_prototype#del_prototype() abort
 		endif
 
 		" プロトタイプ宣言部は除外
-		if stridx(getline(tmp), "#") < 0
+		if stridx(getline(tmp), "^#") < 0
 			execute tmp . "delete"
 		else
 			let posx = tmp
@@ -122,6 +122,13 @@ function! C_prototype#del() abort
 		execute index - i . "delete"
 		let i += 1
 	endfor
+
+	" ここでカーソルを元に戻す
+	call cursor(cur['tate'], cur['yoko'])
+	unlet cur
+	unlet prev
+	unlet tmp
+	unlet lst
 endfunction
 
 function! C_prototype#refresh() abort
