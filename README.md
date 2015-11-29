@@ -1,5 +1,5 @@
 # C-prototype.vim
-##What C-prototype works
+##How C-prototype works
 This plugin sort of releases you from substantial compile errors.
 
 When you write a code of C or C++, it should be annoying to add prototype declarations.  
