@@ -19,50 +19,15 @@ NeoBundleLazy 'shima-529/C-prototype.vim', {
 After adding it, run vim and type `:NeoBundleInstall`.
 
 ##Usage
-When you finished writing the entire code, just type `z` in normal mode. That's it!!
-
-e.g.)
-```C
-#include <stdio.h>
-int main(void){
-	func1();
-	func2("Guy");
-	return 0;
-}
-
-void func1(void){
-	puts("Hello World!");
-}
-
-void func2(char *param){
-	printf("Fxxk you, %s!!\n", param);
-}
-```
-By typing `z`, this changes as follows.
-```C
-#include <stdio.h>
-
-void func1(void);			// <---- Added
-void func2(char *param);	// <---- Added
-int main(void){
-	func1();
-	func2("Guy");
-	return 0;
-}
-
-void func1(void){
-	puts("Hello World!");
-}
-
-void func2(char *param){
-	printf("Fxxk you, %s!!\n", param);
-}
-```
+When you finished writing the entire code, just type `z` in normal mode. That's all!!
 
 `z` command goes far from just adding. After editing functions themselves, if you type `z`, the prototypes will be refreshed.
 
 If you want to delete prototypes, type `dz`. This deletes them including a line feed.
 
+Here is how they work:
+
+![pic](./proto.gif "pic")
 
 
 ##Attention
