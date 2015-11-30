@@ -53,49 +53,6 @@ function! C_prototype#make() abort
 
 endfunction
 
-function! C_prototype#del_prototype() abort
-	" カーソル位置
-	let cur = {'tate' : line('.'), 'yoko': col('.')}
-	call cursor(1,1)
-
-	let x = 0
-	let posx = 1
-	let tmp = search(".* .*(.*) *;")
-	while 1
-		if getline(tmp - 1) == ""
-			execute tmp-1 . "delete"
-		endif
-		" ここからプロトタイプを削除
-		call cursor(posx, 1)
-		let tmp = search(".* .*(.*) *;")
-		if tmp <= x
-			break
-		endif
-
-		" main関数の位置で止める
-		let mainpos0 = search('int main')
-		let mainpos1 = search('void main')
-		let mainpos = max([mainpos0, mainpos1])
-		if tmp > mainpos
-			break
-		endif
-
-		" プロトタイプ宣言部は除外
-		if stridx(getline(tmp), "^#") < 0
-			execute tmp . "delete"
-		else
-			let posx = tmp
-		endif
-		let x = tmp - 1
-	endwhile
-
-	" ここでカーソルを元に戻す
-	call cursor(cur['tate'], cur['yoko'])
-	unlet x
-	unlet tmp
-	unlet lst
-endfunction
-
 function! C_prototype#del() abort
 	" カーソル位置
 	let cur = {'tate' : line('.'), 'yoko': col('.')}
@@ -103,8 +60,13 @@ function! C_prototype#del() abort
 
 	let lst = []
 	let prev = 0
+	let mainpos = search(".*main *(.*)\s*{")
+	call cursor(1,1)
 	while 1
-		let tmp = search(".* .*(.*) *;")
+		let tmp = search("[^\s].* .*(.*) *;")
+		if tmp > mainpos
+			break
+		endif
 		if tmp <= prev
 			break
 		endif
