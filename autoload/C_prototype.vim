@@ -19,15 +19,18 @@ function! C_prototype#make() abort
 	unlet tmp
 
 	" 配列に格納
-	let i = 0
 	let txt = [""]
 	for what in lst
-		let addtxt = getline(lst[i])
+		let addtxt = getline(what)
 		if stridx(addtxt, "main") < 0
 			call add(txt, addtxt)
-			let txt[i] = substitute(txt[i], "{", ";", "g")	
 		endif
-		let i+=1
+	endfor
+
+	let i = 0
+	for line in txt
+		let txt[i] = substitute(line, "{", ";", "")
+		let i += 1
 	endfor
 
 	" プリプロセッサ処理の検索
@@ -48,6 +51,7 @@ function! C_prototype#make() abort
 	endfor
 	unlet x
 	unlet tmp
+	unlet txt
 	" ここでカーソルを元に戻す
 	call cursor(cur['tate'], cur['yoko'])
 
@@ -62,8 +66,16 @@ function! C_prototype#del() abort
 	let prev = 0
 	let mainpos = search(".*main *(.*)\s*{")
 	call cursor(1,1)
+
+	" プロトタイプ宣言探索
+	let flag = 0
 	while 1
-		let tmp = search("[^\s].* .*(.*) *;")
+		if flag == 0
+			let tmp = search("[^\s].* .*(.*) *;", "c")
+			let flag += 1
+		else
+			let tmp = search("[^\s].* .*(.*) *;")
+		endif
 		if tmp > mainpos
 			break
 		endif
@@ -71,13 +83,17 @@ function! C_prototype#del() abort
 			break
 		endif
 		if stridx(getline(tmp), "#") < 0
-			if getline(tmp - 1) == ""
-				call add(lst, tmp - 1)
+			if tmp - 1 > 0
+				if getline(tmp - 1) == ""
+					call add(lst, tmp - 1)
+				endif
 			endif
 			call add(lst, tmp)
 		endif
 		let prev = tmp
 	endwhile
+
+	echo lst
 
 	let i = 0
 	for index in lst
@@ -91,6 +107,7 @@ function! C_prototype#del() abort
 	unlet prev
 	unlet tmp
 	unlet lst
+	unlet i
 endfunction
 
 function! C_prototype#refresh() abort
