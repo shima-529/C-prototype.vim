@@ -93,8 +93,6 @@ function! C_prototype#del() abort
 		let prev = tmp
 	endwhile
 
-	echo lst
-
 	let i = 0
 	for index in lst
 		execute index - i . "delete"
