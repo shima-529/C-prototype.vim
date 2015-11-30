@@ -64,8 +64,3 @@ void func1(void){puts("Hello World!");}
 void func2(char *param){	printf("Fxxk you, %s!!\n", param);
 }
 ```
-
----
-
-Please don't fail to **write at least one pre-processor line at the top of the buffer**.  
-If you don't write it, this plugin don't work(I wll modify it soon).
