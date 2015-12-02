@@ -107,35 +107,53 @@ function! C_prototype#get(param) abort
 		endif
 	endwhile
 
-	unlet! prev now word mainpos s:lsttxt
+	unlet! prev now word mainpos
 endfunction
 
-function! C_prototype#list() abort
-	if !exists("s:lsttxt")
-		let s:lsttxt = []
-	endif
+" refresh()用
+function! C_prototype#list(param) abort
+	let s:lsttxt = []
+	" call add(s:lsttxt, "")
+	call cursor(1, 1)
 	for lineNum in s:lst
-		let addtxt = getline(lineNum)
-		if stridx(addtxt, "main") < 0
+		if stridx(getline(lineNum), "main") < 0
+			let addtxt = getline(lineNum)
 			call add(s:lsttxt, addtxt)
 		endif
 	endfor
-	
+
+	let i = 0
+	for line in s:lsttxt
+		let s:lsttxt[i] = substitute(line, "{", ";", "")
+		let i += 1
+	endfor
+	unlet! lineNum addtxt line i
 endfunction
 
 function! C_prototype#refresh() abort
-	if exists("s:lsttxt")
-		let now = s:lsttxt
-		call C_prototype#get("p")
-		call C_prototype#list()
-		if now != s:lsttxt
-			call C_prototype#del()
-			call C_prototype#make()
-		else
-			echohl WarningMsg | echo "No prototype declarations changed." | echohl None
-		endif
-	else
+	if !exists("s:lsttxt")
+		let s:lsttxt = []
+	endif
+
+	let cur = { "tate" : line("."), "yoko" : col(".") }
+	call cursor(1, 1)
+	call C_prototype#get("p")
+	call C_prototype#list("p")
+	let proto = s:lsttxt
+	" protoはプロトタイプの情報
+	call cursor(1, 1)
+	call C_prototype#get("f")
+	call C_prototype#list("f")
+	let func = s:lsttxt
+	call insert(func, "", 0)
+	echo proto
+	echo func
+	if proto != func
 		call C_prototype#del()
 		call C_prototype#make()
+	else
+		echohl WarningMsg | echo "No prototype declarations changed." | echohl None
 	endif
+	call cursor(cur["tate"], cur["yoko"])
+	unlet! cur now
 endfunction
