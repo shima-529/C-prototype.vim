@@ -136,18 +136,19 @@ function! C_prototype#refresh() abort
 	endif
 
 	let cur = { "tate" : line("."), "yoko" : col(".") }
+
 	call cursor(1, 1)
 	call C_prototype#get("p")
 	call C_prototype#list("p")
 	let proto = s:lsttxt
+
 	" protoはプロトタイプの情報
 	call cursor(1, 1)
 	call C_prototype#get("f")
 	call C_prototype#list("f")
 	let func = s:lsttxt
 	call insert(func, "", 0)
-	echo proto
-	echo func
+	
 	if proto != func
 		call C_prototype#del()
 		call C_prototype#make()
