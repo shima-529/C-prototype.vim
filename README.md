@@ -13,10 +13,11 @@ Installation is easy. Add `shima-529/C-prototype.vim` in your `.vimrc` in order 
 If you use `NeoBundle`, type as follows:
 ```vim
 NeoBundleLazy 'shima-529/C-prototype.vim', {
-	\ 'autoload' : {'filetypes' : ['c', 'cpp']}
+	\ 'autoload' : {'filetypes' : ['c']}
 	\ }
 ```
-After adding it, run vim and type `:NeoBundleInstall`.
+After adding it, run vim and type `:NeoBundleInstall`.  
+Because of the structure of a code, you should not add `cpp` to the `filetypes` section below.
 
 ##Usage
 When you finished writing the entire code, just type `z` in normal mode. That's all!!
