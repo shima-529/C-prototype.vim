@@ -1,114 +1,141 @@
 function! C_prototype#make() abort
 	" カーソル位置
-	let cur = {'tate' : line('.'), 'yoko': col('.')}
+	let s:cur = {'tate' : line('.'), 'yoko': col('.')}
 	call cursor(1,1)
 
 	" 関数の検索
-	let x = 0
-	let i = 0
-	let lst = []
-	while 1
-		let tmp = search(".* .*(.*) *{")
-		if tmp <= x
-			break
-		endif
-		call add(lst, tmp)
-		let x = tmp
-	endwhile
-	unlet x
-	unlet tmp
+	call C_prototype#get("f")
 
 	" 配列に格納
-	let txt = [""]
-	for what in lst
-		let addtxt = getline(what)
+	let s:lsttxt = [""]
+	for lineNum in s:lst
+		let addtxt = getline(lineNum)
 		if stridx(addtxt, "main") < 0
-			call add(txt, addtxt)
+			call add(s:lsttxt, addtxt)
 		endif
 	endfor
 
 	let i = 0
-	for line in txt
-		let txt[i] = substitute(line, "{", ";", "")
+	for line in s:lsttxt
+		let s:lsttxt[i] = substitute(line, "{", ";", "")
 		let i += 1
 	endfor
 
-	" プリプロセッサ処理の検索
+	" プリプロセッサ処理の検索(最後の行にプロトタイプを置く)
 	call cursor(1,1)
-	let x = 0
+	let prev = 0
 	while 1
-		let tmp = search("^#")
-		if tmp <= x
+		let now = search("^#", "Wc")
+		if now == 0 || now == prev
 			break
 		endif
-		let x = tmp
+		let prev = now
+		call cursor(line(".") + 1, 1)
 	endwhile
 
 	" 一行ずつ貼り付け
-	for content in txt
-		call append(x, content)
-		let x += 1
+	for content in s:lsttxt
+		call append(prev, content)
+		let prev += 1
 	endfor
-	unlet x
-	unlet tmp
-	unlet txt
 	" ここでカーソルを元に戻す
-	call cursor(cur['tate'], cur['yoko'])
-
+	call cursor(s:cur['tate'], s:cur['yoko'])
+	unlet! s:cur s:lst lineNum i now prev content
 endfunction
 
 function! C_prototype#del() abort
 	" カーソル位置
-	let cur = {'tate' : line('.'), 'yoko': col('.')}
-	call cursor(1,1)
-
-	let lst = []
-	let prev = 0
-	let mainpos = search(".*main *(.*)\s*{")
+	let s:cur = {'tate' : line('.'), 'yoko': col('.')}
 	call cursor(1,1)
 
 	" プロトタイプ宣言探索
-	let flag = 0
-	while 1
-		if flag == 0
-			let tmp = search("[^\s].* .*(.*) *;", "c")
-			let flag += 1
-		else
-			let tmp = search("[^\s].* .*(.*) *;")
-		endif
-		if tmp > mainpos
-			break
-		endif
-		if tmp <= prev
-			break
-		endif
-		if stridx(getline(tmp), "#") < 0
-			if tmp - 1 > 0
-				if getline(tmp - 1) == ""
-					call add(lst, tmp - 1)
-				endif
-			endif
-			call add(lst, tmp)
-		endif
-		let prev = tmp
-	endwhile
+	call C_prototype#get("p")
 
+	" 一行ずつ消していく
 	let i = 0
-	for index in lst
+	for index in s:lst
 		execute index - i . "delete"
 		let i += 1
 	endfor
 
 	" ここでカーソルを元に戻す
-	call cursor(cur['tate'], cur['yoko'])
-	unlet cur
-	unlet prev
-	unlet tmp
-	unlet lst
-	unlet i
+	call cursor(s:cur['tate'], s:cur['yoko'])
+	unlet! i index cur
+endfunction
+
+" 関数orプロトタイプ検索用。プロトタイプ検索時は同時にプリプロセッサ回避＆空行削除も行う。
+function! C_prototype#get(param) abort
+	" 検索用ワードの準備
+	if a:param == "f"
+		let word = ".* .*(.*) *{"
+	elseif a:param == "p"
+		let word = "[^\s].* .*(.*) *;"
+	endif
+	" 各用途用の準備
+	let s:lst = []
+	if a:param == "p"
+		let mainpos = search(".* *main *(.*)\s*{")
+		call cursor(1, 1)
+	endif
+
+	let prev = 0
+	while 1
+		let now = search(word, "Wc")
+		call cursor(line(".") + 1, 1)
+
+		" プロトタイプを探すときにmain関数よりも下は見ない {{{
+		if a:param == "p" && now > mainpos
+			break
+		endif
+		" }}}
+		" 検索しつくしたら撤退
+		if now == 0 || now == prev
+			break
+		endif
+		" プロトタイプを探すとき、プリプロセッサ処理を誤認しないように除外 {{{
+		if a:param == "p" && stridx(getline(now), "#") < 0 && now >= 2
+			" 以下は空行を消す「ついで」の命令
+			if getline(now - 1) == ""
+				call add(s:lst, now - 1)
+			endif
+			call add(s:lst, now)
+		endif
+		" }}}
+		let prev = now
+		if a:param != "p"
+			call add(s:lst, now)
+		endif
+	endwhile
+
+	unlet! prev now word mainpos s:lsttxt
+endfunction
+
+function! C_prototype#list() abort
+	if !exists("s:lsttxt")
+		let s:lsttxt = []
+	endif
+	for lineNum in s:lst
+		let addtxt = getline(lineNum)
+		if stridx(addtxt, "main") < 0
+			call add(s:lsttxt, addtxt)
+		endif
+	endfor
+	
 endfunction
 
 function! C_prototype#refresh() abort
-	call C_prototype#del()
-	call C_prototype#make()
+	if exists("s:lsttxt")
+		let now = s:lsttxt
+		call C_prototype#get("p")
+		call C_prototype#list()
+		if now != s:lsttxt
+			call C_prototype#del()
+			call C_prototype#make()
+		else
+			echohl WarningMsg | echo "No prototype declarations changed." | echohl None
+		endif
+	else
+		call C_prototype#del()
+		call C_prototype#make()
+	endif
 endfunction
