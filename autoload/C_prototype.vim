@@ -2,159 +2,190 @@ function! C_prototype#make() abort
 	" カーソル位置
 	let s:cur = {'tate' : line('.'), 'yoko': col('.')}
 	call cursor(1,1)
+	call C_prototype#get_lastpre()
+	call cursor(s:lastpre, 1)
 
-	" 関数の検索
-	call C_prototype#get("f")
+	call C_prototype#get_func()
+	" 配列(s:func_first)に格納
+	call C_prototype#assign()
 
-	" 配列に格納
-	let s:lsttxt = [""]
-	for lineNum in s:lst
-		let addtxt = getline(lineNum)
-		if stridx(addtxt, "main") < 0
-			call add(s:lsttxt, addtxt)
-		endif
-	endfor
-
-	let i = 0
-	for line in s:lsttxt
-		let s:lsttxt[i] = substitute(line, "{", ";", "")
-		let i += 1
-	endfor
-
-	" プリプロセッサ処理の検索(最後の行にプロトタイプを置く)
-	call cursor(1,1)
-	let prev = 0
-	while 1
-		let now = search("^#", "Wc")
-		if now == 0 || now == prev
-			break
-		endif
-		let prev = now
-		call cursor(line(".") + 1, 1)
-	endwhile
+	call C_prototype#replace()
 
 	" 一行ずつ貼り付け
-	for content in s:lsttxt
-		call append(prev, content)
-		let prev += 1
+	echo 'mainpos: ' . s:mainpos
+	call cursor(s:mainpos, 1)
+	for content in s:func_first
+		call append(line('.')-1, content)
 	endfor
 	" ここでカーソルを元に戻す
 	call cursor(s:cur['tate'], s:cur['yoko'])
-	unlet! s:cur s:lst lineNum i now prev content
+	unlet! content
 endfunction
 
-function! C_prototype#del() abort
+function! C_prototype#delete() abort
 	" カーソル位置
 	let s:cur = {'tate' : line('.'), 'yoko': col('.')}
 	call cursor(1,1)
 
 	" プロトタイプ宣言探索
-	call C_prototype#get("p")
+	call C_prototype#get_proto()
 
 	" 一行ずつ消していく
-	let i = 0
-	for index in s:lst
-		execute index - i . "delete"
+	let i = -1
+	for index in s:proto_line
 		let i += 1
+		execute index - i . 'delete'
 	endfor
+	if i != -1 && getline(s:proto_line[0]-1) == ''
+		execute s:proto_line[0] - 1 . 'delete'
+	endif
 
 	" ここでカーソルを元に戻す
 	call cursor(s:cur['tate'], s:cur['yoko'])
-	unlet! i index cur
+	unlet! i index
 endfunction
 
-" 関数orプロトタイプ検索用。プロトタイプ検索時は同時にプリプロセッサ回避＆空行削除も行う。
-function! C_prototype#get(param) abort
-	" 検索用ワードの準備
-	if a:param == "f"
-		let word = ".* .*(.*) *{"
-	elseif a:param == "p"
-		let word = "[^\s].* .*(.*) *;"
-	endif
-	" 各用途用の準備
-	let s:lst = []
-	if a:param == "p"
-		let mainpos = search(".* *main *(.*)\s*{")
-		call cursor(1, 1)
-	endif
+function! C_prototype#declare() abort
+	" begin, first : 行情報
+	let s:func_begin = []
+	let s:func_end   = []
+	let s:proto_line = []
+	" first : 行の中身
+	let s:func_first = []
+	" プリプロセッサの最終行
+	let s:lastpre = 1
 
+	let s:mainpos = 0
+
+	let s:now_proto = []
+endfunction
+
+" get系は実行前後にカーソル位置調整よろしく
+function! C_prototype#get_main() abort
+	let s:mainpos = search('.* *main *(.*)\s*{')
+endfunction
+
+function! C_prototype#get_func() abort
+	" 1行目は別扱い
+	let first = search('{', 'c')
+	if first > 0
+		if stridx(getline(first), '	') != 0 && stridx(getline(first), '/') != 0 && stridx(getline(first), '(') > 0
+			call add(s:func_begin, first)
+		endif
+	endif
+	normal! %
+	call add(s:func_end, line('.'))
+	" 2行目以降
+	while 1
+		let tmp = search('{',)
+		if tmp > first
+			if stridx(getline(tmp), '	') != 0 && stridx(getline(tmp), '/') != 0 && stridx(getline(tmp), '(') > 0
+				call add(s:func_begin, tmp)
+			endif
+		else
+			break
+		endif
+		normal! %
+		call add(s:func_end, line('.'))
+	endwhile
+	unlet! first tmp
+endfunction
+
+function! C_prototype#get_proto() abort
+	let s:proto_line = []
 	let prev = 0
 	while 1
-		let now = search(word, "Wc")
-		call cursor(line(".") + 1, 1)
-
-		" プロトタイプを探すときにmain関数よりも下は見ない {{{
-		if a:param == "p" && now > mainpos
+		let now = search('[^\s].* .*(.*) *;')
+		if now > s:mainpos || now <= prev
 			break
 		endif
-		" }}}
-		" 検索しつくしたら撤退
-		if now == 0 || now == prev
+		if now == 0
+			let s:proto_line = []
 			break
 		endif
-		" プロトタイプを探すとき、プリプロセッサ処理を誤認しないように除外 {{{
-		if a:param == "p" && stridx(getline(now), "#") < 0 && now >= 2
-			" 以下は空行を消す「ついで」の命令
-			if getline(now - 1) == ""
-				call add(s:lst, now - 1)
-			endif
-			call add(s:lst, now)
-		endif
-		" }}}
+		call add(s:proto_line, now)
 		let prev = now
-		if a:param != "p"
-			call add(s:lst, now)
-		endif
 	endwhile
-
-	unlet! prev now word mainpos
+	unlet! prev now
 endfunction
 
-" refresh()用
-function! C_prototype#list(param) abort
-	let s:lsttxt = []
-	" call add(s:lsttxt, "")
-	call cursor(1, 1)
-	for lineNum in s:lst
-		if stridx(getline(lineNum), "main") < 0
-			let addtxt = getline(lineNum)
-			call add(s:lsttxt, addtxt)
+function! C_prototype#get_protolist() abort
+	call add(s:now_proto, '')
+	for protoline in s:proto_line
+		let tmp = substitute(getline(protoline), ';', '{', '')
+		call add(s:now_proto, tmp)
+	endfor
+	unlet! protoline tmp
+endfunction
+
+function! C_prototype#get_lastpre() abort
+	let prev = 0
+	let now = search('^#', 'c')
+	if now == 0
+		break
+	endif
+	let prev = now
+	while 1
+		let now = search('^#')
+		if now <= prev || now > s:mainpos
+			let s:lastpre = prev
+			break
+		endif
+		let prev = now
+		call cursor(line('.') + 1, 1)
+	endwhile
+	unlet! prev now
+endfunction
+
+function! C_prototype#assign() abort
+	let s:func_first = ['']
+	for lineNum in s:func_begin
+		let addtxt = getline(lineNum)
+		if stridx(addtxt, 'main') < 0
+			call add(s:func_first, addtxt)
 		endif
 	endfor
+	unlet! lineNum
+endfunction
 
+function! C_prototype#replace() abort
 	let i = 0
-	for line in s:lsttxt
-		let s:lsttxt[i] = substitute(line, "{", ";", "")
+	for line in s:func_first
+		let s:func_first[i] = substitute(line, '{', ';', '')
 		let i += 1
 	endfor
-	unlet! lineNum addtxt line i
+	unlet! i line
 endfunction
 
 function! C_prototype#refresh() abort
-	if !exists("s:lsttxt")
-		let s:lsttxt = []
-	endif
+		call C_prototype#declare()
+		call cursor(1, 1)
+		call C_prototype#get_main()
+		call cursor(1, 1)
+		call C_prototype#get_lastpre()
+		call cursor(s:lastpre, 1)
+		call C_prototype#get_func()
+		call C_prototype#assign()
 
-	let cur = { "tate" : line("."), "yoko" : col(".") }
+		call cursor(1, 1)
+		call C_prototype#get_proto()
+		call C_prototype#get_protolist()
 
-	call cursor(1, 1)
-	call C_prototype#get("p")
-	call C_prototype#list("p")
-	let proto = s:lsttxt
-
-	" protoはプロトタイプの情報
-	call cursor(1, 1)
-	call C_prototype#get("f")
-	call C_prototype#list("f")
-	let func = s:lsttxt
-	call insert(func, "", 0)
-	
-	if proto != func
-		call C_prototype#del()
-		call C_prototype#make()
+	if s:now_proto == s:func_first
+		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
-		echohl WarningMsg | echo "No prototype declarations changed." | echohl None
+		call C_prototype#declare()
+		call C_prototype#get_main()
+		call C_prototype#make()
 	endif
-	call cursor(cur["tate"], cur["yoko"])
-	unlet! cur now
+	call cursor(s:cur['tate'], s:cur['yoko'])
+	unlet! s:nowproto
+endfunction
+
+function! C_prototype#del() abort
+	call cursor(1, 1)
+	call C_prototype#get_main()
+	call cursor(1, 1)
+	call C_prototype#delete()
+	call cursor(s:cur['tate'], s:cur['yoko'])
 endfunction
