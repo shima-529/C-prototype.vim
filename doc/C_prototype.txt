@@ -1,0 +1,28 @@
+*C_prototype.jax*		C言語・C++の関数プロトタイプ宣言を追加します。	*C-prototype*
+
+作者       : shima-529
+             このプラグインは{github} https://github.com/shima-529/C-prototype.vim で公開されています。
+最終更新日 : 2015/12/06
+License    : このプラグインはMITライセンスで保護されています。
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	The above copyright notice and this permission notice shall be included in
+	all copies or substantial portions of the Software.
+	
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+	THE SOFTWARE.
+
+=================================================================================
+使い方
+
+C言語・C++でソースコードを入力後、`z` キーを押すと関数プロトタイプ宣言をコードに追加できます。追加位置は `main` 関数の直前行です。
+

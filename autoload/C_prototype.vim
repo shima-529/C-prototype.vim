@@ -12,7 +12,6 @@ function! C_prototype#make() abort
 	call C_prototype#replace()
 
 	" 一行ずつ貼り付け
-	echo 'mainpos: ' . s:mainpos
 	call cursor(s:mainpos, 1)
 	for content in s:func_first
 		call append(line('.')-1, content)
