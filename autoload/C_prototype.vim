@@ -121,7 +121,7 @@ function! C_prototype#get_lastpre() abort
 	let prev = 0
 	let now = search('^#', 'c')
 	if now == 0
-		break
+		return
 	endif
 	let prev = now
 	while 1
