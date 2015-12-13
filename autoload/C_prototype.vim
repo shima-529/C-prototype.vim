@@ -157,6 +157,7 @@ function! C_prototype#replace() abort
 endfunction
 
 function! C_prototype#refresh() abort
+		let s:cur = {'tate' : line('.'), 'yoko': col('.')}
 		call C_prototype#declare()
 		call cursor(1, 1)
 		call C_prototype#get_main()
