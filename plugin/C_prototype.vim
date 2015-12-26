@@ -14,8 +14,15 @@ let g:loaded_C_prototype = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
-nnoremap <silent> z :call C_prototype#refresh()<CR>
-nnoremap <silent> dz :call C_prototype#del()<CR>
+
+nnoremap <silent> <Plug>(c-prototype-make) :<C-u>call C_prototype#refresh()<CR>
+nnoremap <silent> <Plug>(c-prototype-delete) :<C-u>call C_prototype#del()<CR>
+
+let g:c_prototype_no_default_keymappings = get(g:, 'c_prototype_no_default_keymappings', 0)
+if g:c_prototype_no_default_keymappings == 0
+    nnoremap <silent> z :<C-u>call C_prototype#refresh()<CR>
+    nnoremap <silent> dz :<C-u>call C_prototype#del()<CR>
+endif
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
