@@ -180,6 +180,7 @@ function! C_prototype#assign() abort
 	for lineNum in s:func_begin
 		let addtxt = s:get_function_declare_line(lineNum)
 		let addtxt = matchstr(addtxt, '\%(;}\)\@<!\%(\w\+\s\+\)\+\%(\w\+(.*)\)\%(\s*{\)\@=') . ';'
+		let addtxt = substitute(addtxt , '\s*{.*', '', 'g')
 		if stridx(addtxt, 'main') < 0
 			call add(s:func_first, addtxt)
 		endif
