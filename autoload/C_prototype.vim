@@ -22,7 +22,7 @@ function! C_prototype#make() abort
 	call C_prototype#assign()
 
 	" 一行ずつ貼り付け
-	call cursor(s:mainpos, 1)
+	call cursor(s:mainpos - 1, 1)
 	for content in s:func_first
 		call append(line('.')-1, content)
 	endfor
