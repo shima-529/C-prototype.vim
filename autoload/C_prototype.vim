@@ -1,6 +1,18 @@
+let s:cursor_pos_stack = []
+
+function! s:store_current_cursor()
+    call add(s:cursor_pos_stack, [line('.'), col('.')])
+endfunction
+
+function! s:load_current_cursor()
+    let [l, c] = remove(s:cursor_pos_stack, -1)
+    call cursor(l, c)
+endfunction
+
 function! C_prototype#make() abort
 	" カーソル位置
-	let s:cur = {'tate' : line('.'), 'yoko': col('.')}
+    call s:store_current_cursor()
+
 	call cursor(1,1)
 	call C_prototype#get_lastpre()
 	call cursor(s:lastpre, 1)
@@ -9,21 +21,21 @@ function! C_prototype#make() abort
 	" 配列(s:func_first)に格納
 	call C_prototype#assign()
 
-	call C_prototype#replace()
-
 	" 一行ずつ貼り付け
 	call cursor(s:mainpos, 1)
 	for content in s:func_first
 		call append(line('.')-1, content)
 	endfor
+
 	" ここでカーソルを元に戻す
-	call cursor(s:cur['tate'], s:cur['yoko'])
+    call s:load_current_cursor()
+
 	unlet! content
 endfunction
 
 function! C_prototype#delete() abort
 	" カーソル位置
-	let s:cur = {'tate' : line('.'), 'yoko': col('.')}
+    call s:store_current_cursor()
 	call cursor(1,1)
 
 	" プロトタイプ宣言探索
@@ -40,7 +52,7 @@ function! C_prototype#delete() abort
 	endif
 
 	" ここでカーソルを元に戻す
-	call cursor(s:cur['tate'], s:cur['yoko'])
+    call s:load_current_cursor()
 	unlet! i index
 endfunction
 
@@ -61,24 +73,49 @@ endfunction
 
 " get系は実行前後にカーソル位置調整よろしく
 function! C_prototype#get_main() abort
-	let s:mainpos = search('.* *main *(.*)\s*{')
+	let s:mainpos = search('.* *main *(.*)\s*\n*{')
 endfunction
+
+function! s:get_function_declare_line(line_number) abort
+    let margin = 2
+
+    let line_begin = a:line_number - margin
+    let line_end = a:line_number + margin
+    let str = ''
+    for i in range(line_begin, line_end)
+        let str .= substitute(getline(i), '\n', '', 'g')
+    endfor
+
+    return str
+endfunction
+
+function! s:is_valid_function_declare_str(str) abort
+    if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 < stridx(a:str, '('))
+        return 1
+    endif
+
+    return 0
+endf
 
 function! C_prototype#get_func() abort
 	" 1行目は別扱い
 	let first = search('{', 'c')
 	if first > 0
-		if stridx(getline(first), '	') != 0 && stridx(getline(first), '/') != 0 && stridx(getline(first), '(') > 0
+        let line_str = s:get_function_declare_line(first)
+		if s:is_valid_function_declare_str(line_str) == 1
 			call add(s:func_begin, first)
 		endif
 	endif
+
 	normal! %
 	call add(s:func_end, line('.'))
+
 	" 2行目以降
 	while 1
 		let tmp = search('{',)
 		if tmp > first
-			if stridx(getline(tmp), '	') != 0 && stridx(getline(tmp), '/') != 0 && stridx(getline(tmp), '(') > 0
+            let line_str = s:get_function_declare_line(tmp)
+            if s:is_valid_function_declare_str(line_str) == 1
 				call add(s:func_begin, tmp)
 			endif
 		else
@@ -139,7 +176,8 @@ endfunction
 function! C_prototype#assign() abort
 	let s:func_first = ['']
 	for lineNum in s:func_begin
-		let addtxt = getline(lineNum)
+		let addtxt = s:get_function_declare_line(lineNum)
+        let addtxt = matchstr(addtxt, '\%(;}\)\@<!\%(\w\+\s\+\)\+\%(\w\+(.*)\)\%(\s*{\)\@=') . ';'
 		if stridx(addtxt, 'main') < 0
 			call add(s:func_first, addtxt)
 		endif
@@ -147,29 +185,20 @@ function! C_prototype#assign() abort
 	unlet! lineNum
 endfunction
 
-function! C_prototype#replace() abort
-	let i = 0
-	for line in s:func_first
-		let s:func_first[i] = substitute(line, '{', ';', '')
-		let i += 1
-	endfor
-	unlet! i line
-endfunction
-
 function! C_prototype#refresh() abort
-		let s:cur = {'tate' : line('.'), 'yoko': col('.')}
-		call C_prototype#declare()
-		call cursor(1, 1)
-		call C_prototype#get_main()
-		call cursor(1, 1)
-		call C_prototype#get_lastpre()
-		call cursor(s:lastpre, 1)
-		call C_prototype#get_func()
-		call C_prototype#assign()
+    call s:store_current_cursor()
+	call C_prototype#declare()
+	call cursor(1, 1)
+	call C_prototype#get_main()
+	call cursor(1, 1)
+	call C_prototype#get_lastpre()
+	call cursor(s:lastpre, 1)
+	call C_prototype#get_func()
+	call C_prototype#assign()
 
-		call cursor(1, 1)
-		call C_prototype#get_proto()
-		call C_prototype#get_protolist()
+	call cursor(1, 1)
+	call C_prototype#get_proto()
+	call C_prototype#get_protolist()
 
 	if s:now_proto == s:func_first
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
@@ -178,14 +207,18 @@ function! C_prototype#refresh() abort
 		call C_prototype#get_main()
 		call C_prototype#make()
 	endif
-	call cursor(s:cur['tate'], s:cur['yoko'])
-	unlet! s:nowproto
+
+    call s:load_current_cursor()
+	unlet! s:now_proto
 endfunction
 
 function! C_prototype#del() abort
+    call s:store_current_cursor()
+
 	call cursor(1, 1)
 	call C_prototype#get_main()
 	call cursor(1, 1)
 	call C_prototype#delete()
-	call cursor(s:cur['tate'], s:cur['yoko'])
+
+    call s:load_current_cursor()
 endfunction
