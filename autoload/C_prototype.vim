@@ -24,7 +24,11 @@ function! C_prototype#make() abort
 	call C_prototype#assign()
 
 	" 一行ずつ貼り付け
-	call cursor(s:mainpos - 1, 1)
+	" ==================
+	" MODIFIED
+	" call cursor(s:mainpos - 1, 1)
+	call cursor(s:mainpos, 1)
+	" ==================
 	for content in s:func_first
 		call append(line('.')-1, content)
 	endfor
@@ -150,7 +154,11 @@ endfunction
 function! C_prototype#get_protolist() abort
 	call add(s:now_proto, '')
 	for protoline in s:proto_line
-		let tmp = substitute(getline(protoline), ';', '{', '')
+		" ==================
+		" MODIFIED
+		let tmp = getline(protoline)
+		" let tmp = substitute(getline(protoline), ';', '{', '')
+		" ==================
 		call add(s:now_proto, tmp)
 	endfor
 	unlet! protoline tmp
@@ -202,10 +210,15 @@ function! C_prototype#refresh() abort
 	call cursor(1, 1)
 	call C_prototype#get_proto()
 	call C_prototype#get_protolist()
-
+	" echo s:now_proto
+	" echo s:func_first
 	if s:now_proto == s:func_first
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
+		" ==================
+		" MODIFIED
+		call C_prototype#del()
+		" ==================
 		call C_prototype#declare()
 		call C_prototype#get_main()
 		call C_prototype#make()
