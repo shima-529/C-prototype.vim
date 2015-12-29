@@ -11,49 +11,44 @@ function! s:load_current_cursor()
 	call cursor(l, c)
 endfunction
 
-function! C_prototype#make() abort
+function! s:make() abort
 	" カーソル位置
 	call s:store_current_cursor()
 
 	call cursor(1,1)
-	call C_prototype#get_lastpre()
+	call s:get_lastpre()
 	call cursor(s:lastpre, 1)
 
-	call C_prototype#get_func()
+	call s:get_func()
 	" 配列(s:func_first)に格納
-	call C_prototype#assign()
+	call s:assign()
 
 	" 一行ずつ貼り付け
-	" ==================
-	" MODIFIED
 	let flag = 1
 	if getline(s:mainpos-1) != ''
 		call append(s:mainpos-1, '')
 		let flag = 0
 	endif
 	call cursor(s:mainpos - 1 - flag, 1)
-	" call cursor(s:mainpos, 1)
 	for content in s:func_first
-		" call append(line('.')-1, content)
 		call append(line('.'), content)
 		normal! j
 	endfor
-	unlet! flag
-	" ==================
+	" unlet! flag
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
 
-	unlet! content
+	" unlet! content
 endfunction
 
-function! C_prototype#delete() abort
+function! s:delete() abort
 	" カーソル位置
 	call s:store_current_cursor()
 	call cursor(1,1)
 
 	" プロトタイプ宣言探索
-	call C_prototype#get_proto()
+	call s:get_proto()
 
 	" 一行ずつ消していく
 	let i = -1
@@ -67,10 +62,10 @@ function! C_prototype#delete() abort
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
-	unlet! i index
+	" unlet! i index
 endfunction
 
-function! C_prototype#declare() abort
+function! s:declare() abort
 	" begin, first : 行情報
 	let s:func_begin = []
 	let s:func_end   = []
@@ -86,7 +81,7 @@ function! C_prototype#declare() abort
 endfunction
 
 " get系は実行前後にカーソル位置調整よろしく
-function! C_prototype#get_main() abort
+function! s:get_main() abort
 	let s:mainpos = search('.* *main *(.*)\s*\n*{')
 endfunction
 
@@ -111,7 +106,7 @@ function! s:is_valid_function_declare_str(str) abort
 	return 0
 endf
 
-function! C_prototype#get_func() abort
+function! s:get_func() abort
 	" 1行目は別扱い
 	let first = search('{', 'c')
 	if first > 0
@@ -138,10 +133,10 @@ function! C_prototype#get_func() abort
 		normal! %
 		call add(s:func_end, line('.'))
 	endwhile
-	unlet! first tmp
+	" unlet! first tmp
 endfunction
 
-function! C_prototype#get_proto() abort
+function! s:get_proto() abort
 	let s:proto_line = []
 	let prev = 0
 	while 1
@@ -156,23 +151,19 @@ function! C_prototype#get_proto() abort
 		call add(s:proto_line, now)
 		let prev = now
 	endwhile
-	unlet! prev now
+	" unlet! prev now
 endfunction
 
-function! C_prototype#get_protolist() abort
+function! s:get_protolist() abort
 	call add(s:now_proto, '')
 	for protoline in s:proto_line
-		" ==================
-		" MODIFIED
 		let tmp = getline(protoline)
-		" let tmp = substitute(getline(protoline), ';', '{', '')
-		" ==================
 		call add(s:now_proto, tmp)
 	endfor
-	unlet! protoline tmp
+	" unlet! protoline tmp
 endfunction
 
-function! C_prototype#get_lastpre() abort
+function! s:get_lastpre() abort
 	let prev = 0
 	let now = search('^#', 'c')
 	if now == 0
@@ -188,10 +179,10 @@ function! C_prototype#get_lastpre() abort
 		let prev = now
 		call cursor(line('.') + 1, 1)
 	endwhile
-	unlet! prev now
+	" unlet! prev now
 endfunction
 
-function! C_prototype#assign() abort
+function! s:assign() abort
 	let s:func_first = ['']
 	for lineNum in s:func_begin
 		let addtxt = s:get_function_declare_line(lineNum)
@@ -201,48 +192,45 @@ function! C_prototype#assign() abort
 			call add(s:func_first, addtxt)
 		endif
 	endfor
-	unlet! lineNum
+	" unlet! lineNum
 endfunction
 
 function! C_prototype#refresh() abort
 	call s:store_current_cursor()
-	call C_prototype#declare()
+	call s:declare()
 	call cursor(1, 1)
-	call C_prototype#get_main()
+	call s:get_main()
 	call cursor(1, 1)
-	call C_prototype#get_lastpre()
+	call s:get_lastpre()
 	call cursor(s:lastpre, 1)
-	call C_prototype#get_func()
-	call C_prototype#assign()
+	call s:get_func()
+	call s:assign()
 
 	call cursor(1, 1)
-	call C_prototype#get_proto()
-	call C_prototype#get_protolist()
+	call s:get_proto()
+	call s:get_protolist()
 	" echo s:now_proto
 	" echo s:func_first
 	if s:now_proto == s:func_first
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
-		" ==================
-		" MODIFIED
 		call C_prototype#del()
-		" ==================
-		call C_prototype#declare()
-		call C_prototype#get_main()
-		call C_prototype#make()
+		call s:declare()
+		call s:get_main()
+		call s:make()
 	endif
 
 	call s:load_current_cursor()
-	unlet! s:now_proto
+	" unlet! s:now_proto
 endfunction
 
 function! C_prototype#del() abort
 	call s:store_current_cursor()
 
 	call cursor(1, 1)
-	call C_prototype#get_main()
+	call s:get_main()
 	call cursor(1, 1)
-	call C_prototype#delete()
+	call s:delete()
 
 	call s:load_current_cursor()
 endfunction
