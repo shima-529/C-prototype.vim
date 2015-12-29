@@ -38,6 +38,7 @@ function! C_prototype#make() abort
 		call append(line('.'), content)
 		normal! j
 	endfor
+	unlet! flag
 	" ==================
 
 	" ここでカーソルを元に戻す
