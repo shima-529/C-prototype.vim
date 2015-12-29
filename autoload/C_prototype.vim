@@ -16,8 +16,9 @@ function! s:make() abort
 	call s:store_current_cursor()
 
 	call cursor(1,1)
-	call s:get_lastpre()
-	call cursor(s:lastpre, 1)
+	" call s:get_lastpre()
+	" call cursor(s:lastpre, 1)
+	call cursor(s:mainpos, 1)
 
 	call s:get_func()
 	" 配列(s:func_first)に格納
@@ -157,23 +158,23 @@ function! s:get_protolist() abort
 	endfor
 endfunction
 
-function! s:get_lastpre() abort
-	let prev = 0
-	let now = search('^#', 'c')
-	if now == 0
-		return
-	endif
-	let prev = now
-	while 1
-		let now = search('^#')
-		if now <= prev || now > s:mainpos
-			let s:lastpre = prev
-			break
-		endif
-		let prev = now
-		call cursor(line('.') + 1, 1)
-	endwhile
-endfunction
+" function! s:get_lastpre() abort
+" 	let prev = 0
+" 	let now = search('^#', 'c')
+" 	if now == 0
+" 		return
+" 	endif
+" 	let prev = now
+" 	while 1
+" 		let now = search('^#')
+" 		if now <= prev || now > s:mainpos
+" 			let s:lastpre = prev
+" 			break
+" 		endif
+" 		let prev = now
+" 		call cursor(line('.') + 1, 1)
+" 	endwhile
+" endfunction
 
 function! s:assign() abort
 	let s:func_first = ['']
@@ -193,8 +194,8 @@ function! C_prototype#refresh() abort
 	call cursor(1, 1)
 	call s:get_main()
 	call cursor(1, 1)
-	call s:get_lastpre()
-	call cursor(s:lastpre, 1)
+	" call s:get_lastpre()
+	call cursor(s:mainpos, 1)
 	call s:get_func()
 	call s:assign()
 
