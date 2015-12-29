@@ -26,12 +26,19 @@ function! C_prototype#make() abort
 	" 一行ずつ貼り付け
 	" ==================
 	" MODIFIED
-	" call cursor(s:mainpos - 1, 1)
-	call cursor(s:mainpos, 1)
-	" ==================
+	let flag = 1
+	if getline(s:mainpos-1) != ''
+		call append(s:mainpos-1, '')
+		let flag = 0
+	endif
+	call cursor(s:mainpos - 1 - flag, 1)
+	" call cursor(s:mainpos, 1)
 	for content in s:func_first
-		call append(line('.')-1, content)
+		" call append(line('.')-1, content)
+		call append(line('.'), content)
+		normal! j
 	endfor
+	" ==================
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
