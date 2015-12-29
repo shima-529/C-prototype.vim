@@ -34,12 +34,10 @@ function! s:make() abort
 		call append(line('.'), content)
 		normal! j
 	endfor
-	" unlet! flag
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
 
-	" unlet! content
 endfunction
 
 function! s:delete() abort
@@ -62,7 +60,6 @@ function! s:delete() abort
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
-	" unlet! i index
 endfunction
 
 function! s:declare() abort
@@ -133,7 +130,6 @@ function! s:get_func() abort
 		normal! %
 		call add(s:func_end, line('.'))
 	endwhile
-	" unlet! first tmp
 endfunction
 
 function! s:get_proto() abort
@@ -151,7 +147,6 @@ function! s:get_proto() abort
 		call add(s:proto_line, now)
 		let prev = now
 	endwhile
-	" unlet! prev now
 endfunction
 
 function! s:get_protolist() abort
@@ -160,7 +155,6 @@ function! s:get_protolist() abort
 		let tmp = getline(protoline)
 		call add(s:now_proto, tmp)
 	endfor
-	" unlet! protoline tmp
 endfunction
 
 function! s:get_lastpre() abort
@@ -179,7 +173,6 @@ function! s:get_lastpre() abort
 		let prev = now
 		call cursor(line('.') + 1, 1)
 	endwhile
-	" unlet! prev now
 endfunction
 
 function! s:assign() abort
@@ -192,7 +185,6 @@ function! s:assign() abort
 			call add(s:func_first, addtxt)
 		endif
 	endfor
-	" unlet! lineNum
 endfunction
 
 function! C_prototype#refresh() abort
@@ -221,7 +213,6 @@ function! C_prototype#refresh() abort
 	endif
 
 	call s:load_current_cursor()
-	" unlet! s:now_proto
 endfunction
 
 function! C_prototype#del() abort
