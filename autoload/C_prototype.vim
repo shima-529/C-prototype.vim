@@ -23,22 +23,20 @@ function! s:make() abort
 	call s:get_func()
 	" 配列(s:func_first)に格納
 	call s:assign()
+	let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
 
-	" 一行ずつ貼り付け
-	let flag = 1
-	if getline(s:mainpos-1) != ''
-		call append(s:mainpos-1, '')
-		let flag = 0
-	endif
-	call cursor(s:mainpos - 1 - flag, 1)
-	for content in s:func_first
-		call append(line('.'), content)
-		normal! j
+	let added_lines = s:func_first
+
+	" Add blank lines to line str list.
+	for i in range(0, g:c_prototype_insert_point - 1)
+		call add(added_lines, '')
 	endfor
+
+	" Append prototypes.
+	call append(s:mainpos - 1, added_lines)
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
-
 endfunction
 
 function! s:delete() abort
@@ -49,14 +47,21 @@ function! s:delete() abort
 	" プロトタイプ宣言探索
 	call s:get_proto()
 
+	if empty(s:proto_line) == 1
+		return
+	endif
+
 	" 一行ずつ消していく
 	let i = -1
 	for index in s:proto_line
 		let i += 1
-		execute index - i . 'delete'
+		execute 'keepjumps ' . (index - i) . 'delete'
 	endfor
-	if i != -1 && getline(s:proto_line[0]-1) == ''
-		execute s:proto_line[0] - 1 . 'delete'
+
+	let line_num = s:proto_line[0]
+	if getline(line_num) == ''
+		let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
+		execute 'keepjumps ' . line_num . 'delete' . g:c_prototype_insert_point
 	endif
 
 	" ここでカーソルを元に戻す
@@ -80,7 +85,7 @@ endfunction
 
 " get系は実行前後にカーソル位置調整よろしく
 function! s:get_main() abort
-	let s:mainpos = search('.* *main *(.*)\s*\n*{')
+	let s:mainpos = search('.* *main *(.*)\s*\n*{', 'n')
 endfunction
 
 function! s:get_function_declare_line(line_number) abort
@@ -114,7 +119,7 @@ function! s:get_func() abort
 		endif
 	endif
 
-	normal! %
+	keepjumps normal! %
 	call add(s:func_end, line('.'))
 
 	" 2行目以降
@@ -128,7 +133,7 @@ function! s:get_func() abort
 		else
 			break
 		endif
-		normal! %
+		keepjumps normal! %
 		call add(s:func_end, line('.'))
 	endwhile
 endfunction
@@ -137,7 +142,7 @@ function! s:get_proto() abort
 	let s:proto_line = []
 	let prev = 0
 	while 1
-		let now = search('[^\s].* .*(.*) *;')
+		let now = search('[^\s].* .*(.*) *;', 'n')
 		if now > s:mainpos || now <= prev
 			break
 		endif
@@ -147,6 +152,8 @@ function! s:get_proto() abort
 		endif
 		call add(s:proto_line, now)
 		let prev = now
+
+		call cursor(now + 1, 1)
 	endwhile
 endfunction
 
@@ -158,32 +165,43 @@ function! s:get_protolist() abort
 	endfor
 endfunction
 
-" function! s:get_lastpre() abort
-" 	let prev = 0
-" 	let now = search('^#', 'c')
-" 	if now == 0
-" 		return
-" 	endif
-" 	let prev = now
-" 	while 1
-" 		let now = search('^#')
-" 		if now <= prev || now > s:mainpos
-" 			let s:lastpre = prev
-" 			break
-" 		endif
-" 		let prev = now
-" 		call cursor(line('.') + 1, 1)
-" 	endwhile
-" endfunction
+function! s:get_lastpre() abort
+	let prev = 0
+	let now = search('^#', 'c')
+	if now == 0
+		return
+	endif
+	let prev = now
+	while 1
+		let now = search('^#')
+		if now <= prev || now > s:mainpos
+			let s:lastpre = prev
+			break
+		endif
+		let prev = now
+		call cursor(line('.') + 1, 1)
+	endwhile
+	unlet! prev now
+endfunction
 
 function! s:assign() abort
-	let s:func_first = ['']
-	for lineNum in s:func_begin
-		let addtxt = s:get_function_declare_line(lineNum)
-		let addtxt = matchstr(addtxt, '\%(;}\)\@<!\%(\w\+\s\+\)\+\%(\w\+(.*)\)\%(\s*{\)\@=') . ';'
-		let addtxt = substitute(addtxt , '\s*{.*', '', 'g')
-		if stridx(addtxt, 'main') < 0
-			call add(s:func_first, addtxt)
+	let g:c_prototype_remove_var_name = get(g:, 'c_prototype_remove_var_name', 0)
+
+	let s:func_first = []
+	for line_num in s:func_begin
+		let str = s:get_function_declare_line(line_num)
+		let str = substitute(str, '\s*{.*', '', 'g')
+		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\s\)\+\w\+(.*)') . ';'
+
+		" If option is enable, remove function argument variables.
+		if g:c_prototype_remove_var_name == 1
+			if match(str, '(\s*void\s*)') == -1
+				let str = substitute(str, '\s*\w\+\s*\ze[,)]', '', 'g')
+			endif
+		endif
+
+		if stridx(str, 'main') == -1
+			call add(s:func_first, str)
 		endif
 	endfor
 endfunction
