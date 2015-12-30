@@ -16,9 +16,8 @@ function! s:make() abort
 	call s:store_current_cursor()
 
 	call cursor(1,1)
-	" call s:get_lastpre()
-	" call cursor(s:lastpre, 1)
-	call cursor(s:mainpos, 1)
+	call s:get_lastpre()
+	call cursor(s:lastpre, 1)
 
 	call s:get_func()
 	" 配列(s:func_first)に格納
@@ -142,7 +141,8 @@ function! s:get_proto() abort
 	let s:proto_line = []
 	let prev = 0
 	while 1
-		let now = search('[^\s].* .*(.*) *;', 'n')
+		" let now = search('[^\s].* .*(.*) *;', 'n')
+		let now = search('[^\s].* .*(.*) *;')
 		if now > s:mainpos || now <= prev
 			break
 		endif
@@ -153,7 +153,7 @@ function! s:get_proto() abort
 		call add(s:proto_line, now)
 		let prev = now
 
-		call cursor(now + 1, 1)
+		" call cursor(now + 1, 1)
 	endwhile
 endfunction
 
@@ -212,14 +212,15 @@ function! C_prototype#refresh() abort
 	call cursor(1, 1)
 	call s:get_main()
 	call cursor(1, 1)
-	" call s:get_lastpre()
-	call cursor(s:mainpos, 1)
+	call s:get_lastpre()
+	call cursor(s:lastpre, 1)
 	call s:get_func()
 	call s:assign()
 
 	call cursor(1, 1)
 	call s:get_proto()
 	call s:get_protolist()
+	call remove(s:now_proto, 0)
 	" echo s:now_proto
 	" echo s:func_first
 	if s:now_proto == s:func_first
