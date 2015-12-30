@@ -55,13 +55,13 @@ function! C_prototype#delete() abort
 	let i = -1
 	for index in s:proto_line
 		let i += 1
-		execute index - i . 'delete'
+		execute 'keepjumps ' . (index - i) . 'delete'
 	endfor
 
 	let line_num = s:proto_line[0]
 	if getline(line_num) == ''
 		let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
-		execute line_num . 'delete' . g:c_prototype_insert_point
+		execute 'keepjumps ' . line_num . 'delete' . g:c_prototype_insert_point
 	endif
 
 	" ここでカーソルを元に戻す
@@ -85,7 +85,7 @@ endfunction
 
 " get系は実行前後にカーソル位置調整よろしく
 function! C_prototype#get_main() abort
-	let s:mainpos = search('.* *main *(.*)\s*\n*{')
+	let s:mainpos = search('.* *main *(.*)\s*\n*{', 'n')
 endfunction
 
 function! s:get_function_declare_line(line_number) abort
@@ -119,7 +119,7 @@ function! C_prototype#get_func() abort
 		endif
 	endif
 
-	normal! %
+	keepjumps normal! %
 	call add(s:func_end, line('.'))
 
 	" 2行目以降
@@ -133,17 +133,16 @@ function! C_prototype#get_func() abort
 		else
 			break
 		endif
-		normal! %
+		keepjumps normal! %
 		call add(s:func_end, line('.'))
 	endwhile
-	unlet! first tmp
 endfunction
 
 function! C_prototype#get_proto() abort
 	let s:proto_line = []
 	let prev = 0
 	while 1
-		let now = search('[^\s].* .*(.*) *;')
+		let now = search('[^\s].* .*(.*) *;', 'n')
 		if now > s:mainpos || now <= prev
 			break
 		endif
@@ -153,8 +152,9 @@ function! C_prototype#get_proto() abort
 		endif
 		call add(s:proto_line, now)
 		let prev = now
+
+		call cursor(now + 1, 1)
 	endwhile
-	unlet! prev now
 endfunction
 
 function! C_prototype#get_protolist() abort
