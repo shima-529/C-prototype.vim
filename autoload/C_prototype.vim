@@ -193,15 +193,14 @@ endfunction
 
 function! C_prototype#assign() abort
 	let s:func_first = ['']
-	for lineNum in s:func_begin
-		let str = s:get_function_declare_line(lineNum)
+	for line_num in s:func_begin
+		let str = s:get_function_declare_line(line_num)
 		let str = substitute(str, '\s*{.*', '', 'g')
 		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\s\)\+\w\+(.*)') . ';'
 		if stridx(str, 'main') < 0
 			call add(s:func_first, str)
 		endif
 	endfor
-	unlet! lineNum
 endfunction
 
 function! C_prototype#refresh() abort
