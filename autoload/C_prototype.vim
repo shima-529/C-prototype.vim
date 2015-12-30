@@ -47,19 +47,25 @@ function! C_prototype#delete() abort
 	" プロトタイプ宣言探索
 	call C_prototype#get_proto()
 
+	if empty(s:proto_line) == 1
+		return
+	endif
+
 	" 一行ずつ消していく
 	let i = -1
 	for index in s:proto_line
 		let i += 1
 		execute index - i . 'delete'
 	endfor
-	if i != -1 && getline(s:proto_line[0]-1) == ''
-		execute s:proto_line[0] - 1 . 'delete'
+
+	let line_num = s:proto_line[0]
+	if getline(line_num) == ''
+		let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
+		execute line_num . 'delete' . g:c_prototype_insert_point
 	endif
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
-	unlet! i index
 endfunction
 
 function! C_prototype#declare() abort
@@ -182,7 +188,7 @@ endfunction
 function! C_prototype#assign() abort
 	let g:c_prototype_remove_var_name = get(g:, 'c_prototype_remove_var_name', 0)
 
-	let s:func_first = ['']
+	let s:func_first = []
 	for line_num in s:func_begin
 		let str = s:get_function_declare_line(line_num)
 		let str = substitute(str, '\s*{.*', '', 'g')
