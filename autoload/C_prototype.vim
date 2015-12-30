@@ -23,25 +23,20 @@ function! C_prototype#make() abort
 	" 配列(s:func_first)に格納
 	call C_prototype#assign()
 
-	" 一行ずつ貼り付け
-	let flag = 1
-	if getline(s:mainpos-1) != ''
-		call append(s:mainpos-1, '')
-		let flag = 0
-	endif
-	call cursor(s:mainpos - 1 - flag, 1)
-	" call cursor(s:mainpos, 1)
-	for content in s:func_first
-		" call append(line('.')-1, content)
-		call append(line('.'), content)
-		normal! j
+	let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
+
+	let added_lines = s:func_first
+
+	" Add blank lines to line str list.
+	for i in range(0, g:c_prototype_insert_point - 1)
+		call add(added_lines, '')
 	endfor
-	unlet! flag
+
+	" Append prototypes.
+	call append(s:mainpos - 1, added_lines)
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
-
-	unlet! content
 endfunction
 
 function! C_prototype#delete() abort
