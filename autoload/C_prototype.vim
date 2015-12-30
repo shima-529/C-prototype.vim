@@ -194,11 +194,11 @@ endfunction
 function! C_prototype#assign() abort
 	let s:func_first = ['']
 	for lineNum in s:func_begin
-		let addtxt = s:get_function_declare_line(lineNum)
-		let addtxt = matchstr(addtxt, '\%(;}\)\@<!\%(\w\+\s\+\)\+\%(\w\+(.*)\)\%(\s*{\)\@=') . ';'
-		let addtxt = substitute(addtxt , '\s*{.*', '', 'g')
-		if stridx(addtxt, 'main') < 0
-			call add(s:func_first, addtxt)
+		let str = s:get_function_declare_line(lineNum)
+		let str = substitute(str, '\s*{.*', '', 'g')
+		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\s\)\+\w\+(.*)') . ';'
+		if stridx(str, 'main') < 0
+			call add(s:func_first, str)
 		endif
 	endfor
 	unlet! lineNum
