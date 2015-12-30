@@ -24,8 +24,6 @@ function! C_prototype#make() abort
 	call C_prototype#assign()
 
 	" 一行ずつ貼り付け
-	" ==================
-	" MODIFIED
 	let flag = 1
 	if getline(s:mainpos-1) != ''
 		call append(s:mainpos-1, '')
@@ -39,7 +37,6 @@ function! C_prototype#make() abort
 		normal! j
 	endfor
 	unlet! flag
-	" ==================
 
 	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
@@ -162,11 +159,7 @@ endfunction
 function! C_prototype#get_protolist() abort
 	call add(s:now_proto, '')
 	for protoline in s:proto_line
-		" ==================
-		" MODIFIED
 		let tmp = getline(protoline)
-		" let tmp = substitute(getline(protoline), ';', '{', '')
-		" ==================
 		call add(s:now_proto, tmp)
 	endfor
 	unlet! protoline tmp
@@ -232,10 +225,7 @@ function! C_prototype#refresh() abort
 	if s:now_proto == s:func_first
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
-		" ==================
-		" MODIFIED
 		call C_prototype#del()
-		" ==================
 		call C_prototype#declare()
 		call C_prototype#get_main()
 		call C_prototype#make()
