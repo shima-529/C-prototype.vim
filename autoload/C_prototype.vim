@@ -192,12 +192,22 @@ function! C_prototype#get_lastpre() abort
 endfunction
 
 function! C_prototype#assign() abort
+	let g:c_prototype_remove_var_name = get(g:, 'c_prototype_remove_var_name', 0)
+
 	let s:func_first = ['']
 	for line_num in s:func_begin
 		let str = s:get_function_declare_line(line_num)
 		let str = substitute(str, '\s*{.*', '', 'g')
 		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\s\)\+\w\+(.*)') . ';'
-		if stridx(str, 'main') < 0
+
+		" If option is enable, remove function argument variables.
+		if g:c_prototype_remove_var_name == 1
+			if match(str, '(\s*void\s*)') == -1
+				let str = substitute(str, '\s*\w\+\s*\ze[,)]', '', 'g')
+			endif
+		endif
+
+		if stridx(str, 'main') == -1
 			call add(s:func_first, str)
 		endif
 	endfor
