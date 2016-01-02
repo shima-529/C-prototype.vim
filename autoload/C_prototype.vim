@@ -141,7 +141,6 @@ function! s:get_proto() abort
 	let s:proto_line = []
 	let prev = 0
 	while 1
-		" let now = search('[^\s].* .*(.*) *;', 'n')
 		let now = search('[^\s].* .*(.*) *;')
 		if now > s:mainpos || now <= prev
 			break
@@ -152,8 +151,6 @@ function! s:get_proto() abort
 		endif
 		call add(s:proto_line, now)
 		let prev = now
-
-		" call cursor(now + 1, 1)
 	endwhile
 endfunction
 
