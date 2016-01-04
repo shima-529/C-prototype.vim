@@ -1,92 +1,67 @@
 # C-prototype.vim
-##How C-prototype works
-This plugin sort of releases you from substantial compile errors.
 
-When you write a code of C or C++, it should be annoying to add prototype declarations.  
-If you've forgotten to write them, why the compiler says, " **conflicting types for 'func'** "  
-**This is very annoying!**
+**For English, please [click here](doc/README-en.md) to jump.
 
-If you make the most use of this plugin, just type `z` in normal mode. Prototype delerations will be automatically added just before `main` function.
+##このプラグインの概要
 
-## Installation
-Installation is easy. Add `shima-529/C-prototype.vim` in your `.vimrc` in order to run by the package manager you use.  
-If you use `NeoBundle`, type as follows:
+あなたはC言語やC++でのコードを書く時、関数を `main` 関数の後に書く派でしょうか？？そのような人にとって、関数プロトタイプ宣言を挿入するのが面倒だと感じることは多いでしょう。もし書き忘れてしまいコンパイルをすると、" **conflicting types for 'func'** " などと怒られてしまいます。この煩わしさを解消するのに役立つのがこのプラグインです。
+
+初期設定の段階では、<kbd>z</kbd> キーを押すだけで、自動的にプロトタイプが `main` 関数の上に追加されます。
+
+## インストール・導入
+
+インストールは簡単です。何かパッケージマネージャーを使っている人であれば、`.vimrc` に `shima-529/C-prototype.vim` に関する記述を追加するだけで良いです。
+例えば `NeoBundle` を使っている方は、
 ```vim
 NeoBundleLazy 'shima-529/C-prototype.vim', {
-	\ 'autoload' : {'filetypes' : ['c']}
+	\ 'autoload' : {'filetypes' : ['c', 'cpp']}
 	\ }
 ```
-After adding it, run vim and type `:NeoBundleInstall`.  
-Because of the structure of a code, I do not recommend adding `cpp` to the `filetypes` section below.
+と書いてやればいいでしょう。上の設定では、ファイルタイプが `c` と `cpp` の時にのみこのプラグインが読み込まれるようになっています。その後、インストールのコマンドを打ち込めば完了です(`NeoBundle` の方は `:NeoBundleInstall` と打つ)。
 
-##Usage
+その他の方は、
+```bash
+$ git clone https://github.com/shima-529/C-prototype.vim
+```
+と、希望のディレクトリで実行させて各自読み込みの設定を追加してください。
 
-**You can change these key bindings. Please see the next section.**
+##使い方
 
-When you finished writing the entire code, just type `z` in normal mode. That's all!!
+**この項目で紹介するキーバインドは設定変更できます。詳しくは次の項目をご覧ください。**
 
-`z` command goes far from just adding. After editing functions themselves, if you type `z`, the prototypes will be refreshed.
+コードを書き終えたら、<kbd>z</kbd> をノーマルモードで押してください。これだけでプロトタイプが追加できています。さらに、関数自体(関数の型や引数)を変更した後に <kbd>z</kbd> を押すとその変更にあわせてプロトタイプ自体も更新されます。必要のないときは更新されません。
 
-If you want to delete prototypes, type `dz`. This deletes them including a line feed.
+プロトタイプを削除したいときは <kbd>d</kbd><kbd>z</kbd> を押してください。先ほど追加されたプロトタイプは、全て削除されます。
 
-Here is how they work:
+<kbd>z</kbd> キーを押すことで、Ex コマンド`:CPrototypeMake` が実行されます。同じくして <kbd>d</kbd><kbd>z</kbd> により、`:CPrototypeDelete` が実行されます。
 
-![pic](./proto.gif "pic")
+##設定
+###1. キーバインド
 
-##Settings
-###1. Key Bindings
-
-If you want to use `z` as a default, you need not do anything.  
-However, `z` is a very useful key. If you do not like to override it, you can set bindings on your `.vimrc`.
+プロトタイプ追加ボタンとして、デフォルトの <kbd>z</kbd> を使いたければ何も設定をする必要はありません。
+しかしながら、<kbd>z</kbd> はとても便利なキーです。従ってこのキーをオーバーライドしたくなければ、以下の様な記述を `.vimrc` に追加してください。
 
 e.g. )
 
 ```Vim
+" M、dM はお好きなキーを指定してください。
 nmap M <Plug>(c-prototype-make)
 nmap dM <Plug>(c-prototype-delete)
+" ↓これを 1 に指定することで z のオーバーライドを無効化する
 let g:c_prototype_no_default_keymappings = 1
 ```
-Note that the last line is needed to apply changes.
+コメントにもあるように、カスタムしたキーバインドを利用する場合は最終行を忘れずに記述してください。
 
-Or you can use without setting the bindings. In this case, add `let g:c_prototype_no_default_keymappings = 1` to your `.vimrc`.  
-`:CPrototypeMake` makes prototypes and `:CPrototypeDelete` deletes them.
+また、単にこのプラグインのキーバインドを全て無効化して `:CPrototypeMake` と `:CPrototypeDelete` のみでこのプラグインを実行したい場合は、上の例にある最終行のみを記述すれば可能です。
 
-###2. Temporary Disabling
+###2. 一時的に無効化する
 
-If you want to disable this plugin without deleting the settings or commenting out, add `let g:loaded_C_prototype = 1`. This prevents this plugin from being loaded.
+このプラグインを、設定を消去したりコメントアウトしたりせずに無効化したい場合は、`let g:loaded_C_prototype = 1` を `.vimrc` に記述してください。
 
-##Attention(known bugs)
-If you did not insert line feeds after **`{`**, this plugin does not work.
+###3. 変数名の明示
 
-**N.G.)**
-```C
-#include <stdio.h>
-int main(void){
-	func1();
-	func2("Guy");
-	return 0;
-}
+プロトタイプ宣言では、変数型は指定しなくてはなりませんが変数名まで指定する必要はありません。もしも変数名をプロトタイプ宣言に明示しないのなら、`let g:c_prototype_remove_var_name = 1` としてください。
 
-void func1(void){puts("Hello World!");}
+###4. 挿入位置
 
-void func2(char *param){	printf("Fxxk you, %s!!\n", param);
-}
-```
-By typing `z`, this changes as follows.
-```C
-#include <stdio.h>
-
-void func1(void)	// <---- Added
-void func1(void)	// <---- Added
-
-int main(void){
-	func1();
-	func2("Guy");
-	return 0;
-}
-
-void func1(void){puts("Hello World!");}
-
-void func2(char *param){	printf("Fxxk you, %s!!\n", param);
-}
-```
+`let g:c_prototype_insert_point = 1` とすると、プロトタイプ宣言を挿入した直後に空行が挿入され、`main` 関数との間が1行空きます。
