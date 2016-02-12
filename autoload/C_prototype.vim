@@ -1,7 +1,15 @@
-" vim: noexpandtab
+" Variables List ==============================================
+" l = line(s)  c = content(s)
+" s:l_func_beg    : 各関数の先頭行
+" s:l_func_end    : 各関数の末行
+" s:l_protos      : (main関数より上で)プロトタイプ宣言のある行
+" s:c_func_first  : 各関数の先頭行の中身
+" s:l_lastpp      : プリプロセッサの最終行
+" s:l_mainpos     : main関数の位置
+" s:c_now_proto   : 現在のプロトタイプ宣言の中身
+" =============================================================
 
 let s:cursor_pos_stack = []
-
 function! s:store_current_cursor()
 	call add(s:cursor_pos_stack, [line('.'), col('.')])
 endfunction
@@ -12,29 +20,25 @@ function! s:load_current_cursor()
 endfunction
 
 function! s:make() abort
-	" カーソル位置
 	call s:store_current_cursor()
-
 	call cursor(1,1)
-	call s:get_lastpre()
-	call cursor(s:lastpre, 1)
+	" call s:get_lastpre()
 
 	call s:get_func()
-	" 配列(s:func_first)に格納
+	" 配列(s:c_func_first)に格納
 	call s:assign()
 	let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
 
-	let added_lines = s:func_first
+	let added_lines = s:c_func_first
+	" echo added_lines
 
 	" Add blank lines to line str list.
 	for i in range(0, g:c_prototype_insert_point - 1)
 		call add(added_lines, '')
 	endfor
-
 	" Append prototypes.
-	call append(s:mainpos - 1, added_lines)
+	call append(s:l_mainpos - 1, added_lines)
 
-	" ここでカーソルを元に戻す
 	call s:load_current_cursor()
 endfunction
 
@@ -46,18 +50,18 @@ function! s:delete() abort
 	" プロトタイプ宣言探索
 	call s:get_proto()
 
-	if empty(s:proto_line) == 1
+	if empty(s:l_protos) == 1
 		return
 	endif
 
 	" 一行ずつ消していく
 	let i = -1
-	for index in s:proto_line
+	for index in s:l_protos
 		let i += 1
 		execute 'keepjumps ' . (index - i) . 'delete'
 	endfor
 
-	let line_num = s:proto_line[0]
+	let line_num = s:l_protos[0]
 	if getline(line_num) == ''
 		let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
 		execute 'keepjumps ' . line_num . 'delete' . g:c_prototype_insert_point
@@ -67,24 +71,22 @@ function! s:delete() abort
 	call s:load_current_cursor()
 endfunction
 
-function! s:declare() abort
-	" begin, first : 行情報
-	let s:func_begin = []
-	let s:func_end   = []
-	let s:proto_line = []
-	" first : 行の中身
-	let s:func_first = []
-	" プリプロセッサの最終行
-	let s:lastpre = 1
-
-	let s:mainpos = 0
-
-	let s:now_proto = []
+function! s:init() abort
+	let s:l_func_beg   = []
+	let s:l_func_end   = []
+	let s:l_protos     = []
+	let s:c_func_first = []
+	let s:l_lastpp = 1
+	let s:l_mainpos = 0
+	let s:c_now_proto = []
 endfunction
 
 " get系は実行前後にカーソル位置調整よろしく
 function! s:get_main() abort
-	let s:mainpos = search('.* *main *(.*)\s*\n*{', 'n')
+	call s:store_current_cursor()
+	call cursor(1, 1)
+	let s:l_mainpos = search('.* *main *(.*)\s*\n*{', 'n')
+	call s:load_current_cursor()
 endfunction
 
 function! s:get_function_declare_line(line_number) abort
@@ -114,12 +116,12 @@ function! s:get_func() abort
 	if first > 0
 		let line_str = s:get_function_declare_line(first)
 		if s:is_valid_function_declare_str(line_str) == 1
-			call add(s:func_begin, first)
+			call add(s:l_func_beg, first)
 		endif
 	endif
 
 	keepjumps normal! %
-	call add(s:func_end, line('.'))
+	call add(s:l_func_end, line('.'))
 
 	" 2行目以降
 	while 1
@@ -127,42 +129,43 @@ function! s:get_func() abort
 		if tmp > first
 			let line_str = s:get_function_declare_line(tmp)
 			if s:is_valid_function_declare_str(line_str) == 1
-				call add(s:func_begin, tmp)
+				call add(s:l_func_beg, tmp)
 			endif
 		else
 			break
 		endif
 		keepjumps normal! %
-		call add(s:func_end, line('.'))
+		call add(s:l_func_end, line('.'))
 	endwhile
 endfunction
 
 function! s:get_proto() abort
-	let s:proto_line = []
+	let s:c_protos = []
 	let prev = 0
 	while 1
 		let now = search('[^\s].* .*(.*) *;')
-		if now > s:mainpos || now <= prev
+		if now > s:l_mainpos || now <= prev
 			break
 		endif
 		if now == 0
-			let s:proto_line = []
+			let s:c_protos = []
 			break
 		endif
-		call add(s:proto_line, now)
+		call add(s:l_protos, now)
 		let prev = now
 	endwhile
 endfunction
 
 function! s:get_protolist() abort
-	call add(s:now_proto, '')
-	for protoline in s:proto_line
+	call add(s:c_now_proto, '')
+	for protoline in s:l_protos
 		let tmp = getline(protoline)
-		call add(s:now_proto, tmp)
+		call add(s:c_now_proto, tmp)
 	endfor
 endfunction
 
 function! s:get_lastpre() abort
+	call s:store_current_cursor()
 	let prev = 0
 	let now = search('^#', 'c')
 	if now == 0
@@ -171,21 +174,21 @@ function! s:get_lastpre() abort
 	let prev = now
 	while 1
 		let now = search('^#')
-		if now <= prev || now > s:mainpos
-			let s:lastpre = prev
+		if now <= prev || now > s:l_mainpos
+			let s:l_lastpp = prev
 			break
 		endif
 		let prev = now
 		call cursor(line('.') + 1, 1)
 	endwhile
-	unlet! prev now
+	call s:load_current_cursor()
 endfunction
 
 function! s:assign() abort
 	let g:c_prototype_remove_var_name = get(g:, 'c_prototype_remove_var_name', 0)
 
-	let s:func_first = []
-	for line_num in s:func_begin
+	let s:c_func_first = []
+	for line_num in s:l_func_beg
 		let str = s:get_function_declare_line(line_num)
 		let str = substitute(str, '\s*{.*', '', 'g')
 		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\s\)\+\w\+(.*)') . ';'
@@ -198,47 +201,46 @@ function! s:assign() abort
 		endif
 
 		if stridx(str, 'main') == -1
-			call add(s:func_first, str)
+			call add(s:c_func_first, str)
 		endif
 	endfor
 endfunction
 
 function! C_prototype#refresh() abort
-	call s:store_current_cursor()
-	call s:declare()
-	call cursor(1, 1)
+	call s:init()
 	call s:get_main()
-	call cursor(1, 1)
 	call s:get_lastpre()
-	call cursor(s:lastpre, 1)
+	call cursor(s:l_lastpp, 1)
 	call s:get_func()
 	call s:assign()
 
 	call cursor(1, 1)
 	call s:get_proto()
 	call s:get_protolist()
-	call remove(s:now_proto, 0)
-	" echo s:now_proto
-	" echo s:func_first
-	if s:now_proto == s:func_first
+	call remove(s:c_now_proto, 0)
+	echo s:c_now_proto
+	echo s:c_func_first
+	if s:c_now_proto == s:c_func_first
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
 		call C_prototype#del()
-		call s:declare()
+		call s:init()
 		call s:get_main()
 		call s:make()
 	endif
-
-	call s:load_current_cursor()
 endfunction
 
 function! C_prototype#del() abort
-	call s:store_current_cursor()
-
-	call cursor(1, 1)
+	call s:init()
 	call s:get_main()
-	call cursor(1, 1)
 	call s:delete()
+endfunction
 
-	call s:load_current_cursor()
+" Experimental(not recommended)
+function! C_prototype#makeHeader() abort
+	call s:init()
+	call s:get_func()
+	call s:assign()
+	:new
+	call append(1, s:c_func_first)
 endfunction
