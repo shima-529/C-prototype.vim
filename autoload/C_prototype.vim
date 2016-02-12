@@ -218,8 +218,8 @@ function! C_prototype#refresh() abort
 	call s:get_proto()
 	call s:get_protolist()
 	call remove(s:c_now_proto, 0)
-	echo s:c_now_proto
-	echo s:c_func_first
+	" echo s:c_now_proto
+	" echo s:c_func_first
 	if s:c_now_proto == s:c_func_first
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
