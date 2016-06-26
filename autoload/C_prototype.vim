@@ -191,7 +191,7 @@ function! s:assign() abort
 	for line_num in s:l_func_beg
 		let str = s:get_function_declare_line(line_num)
 		let str = substitute(str, '\s*{.*', '', 'g')
-		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\s\)\+\w\+(.*)') . ';'
+		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\W*\s\W*\)\+\w\+\s*(.*)') . ';'
 
 		" If option is enable, remove function argument variables.
 		if g:c_prototype_remove_var_name == 1
