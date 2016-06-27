@@ -96,14 +96,18 @@ function! s:get_function_declare_line(line_number) abort
 	let line_end = a:line_number + margin
 	let str = ''
 	for i in range(line_begin, line_end)
-		let str .= substitute(getline(i), '\n', '', 'g')
+		" NOTE
+		if match(getline(i), '\s*/') < 0
+			let str .= substitute(getline(i), '\n', '', 'g')
+		endif
 	endfor
 
 	return str
 endfunction
 
 function! s:is_valid_function_declare_str(str) abort
-	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 < stridx(a:str, '('))
+	" NOTE
+	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 != stridx(a:str, '(')) && (stridx(a:str, '{') >= 0)
 		return 1
 	endif
 
@@ -112,7 +116,8 @@ endf
 
 function! s:get_func() abort
 	" 1行目は別扱い
-	let first = search('{', 'c')
+	" let first = search('{', 'c')
+	let first = search('[^\s]\w*.*(.*)\s*{', 'c')
 	if first > 0
 		let line_str = s:get_function_declare_line(first)
 		if s:is_valid_function_declare_str(line_str) == 1
@@ -125,7 +130,8 @@ function! s:get_func() abort
 
 	" 2行目以降
 	while 1
-		let tmp = search('{',)
+		" let tmp = search('\w*.*(.*)\s*{')
+		let tmp = search('[^\s]\w*.*(.*)\s*{')
 		if tmp > first
 			let line_str = s:get_function_declare_line(tmp)
 			if s:is_valid_function_declare_str(line_str) == 1
@@ -143,7 +149,8 @@ function! s:get_proto() abort
 	let s:c_protos = []
 	let prev = 0
 	while 1
-		let now = search('[^\s].* .*(.*) *;')
+		" let now = search('[^\s].* .*(.*) *;')
+		let now = search('[^\s].* .*[^sizeof](.*) *;')
 		if now > s:l_mainpos || now <= prev
 			break
 		endif
@@ -200,10 +207,14 @@ function! s:assign() abort
 			endif
 		endif
 
-		if stridx(str, 'main') == -1
+		if stridx(str, 'main') == -1 && str != ';'
+			if len(s:c_func_first) != 0 && s:c_func_first[-1] == str
+				call remove(s:c_func_first, -1)
+			endif
 			call add(s:c_func_first, str)
 		endif
 	endfor
+	" call sort(s:c_func_first)
 endfunction
 
 function! C_prototype#refresh() abort
