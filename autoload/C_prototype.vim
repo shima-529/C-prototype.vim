@@ -22,9 +22,8 @@ endfunction
 function! s:make() abort
 	call s:store_current_cursor()
 	call cursor(1,1)
-	" call s:get_lastpre()
 
-	call s:get_func()
+	call s:get_func_beg()
 	" 配列(s:c_func_first)に格納
 	call s:assign()
 	let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
@@ -48,7 +47,7 @@ function! s:delete() abort
 	call cursor(1,1)
 
 	" プロトタイプ宣言探索
-	call s:get_proto()
+	call s:get_protoline()
 
 	if empty(s:l_protos) == 1
 		return
@@ -81,15 +80,14 @@ function! s:init() abort
 	let s:c_now_proto = []
 endfunction
 
-" get系は実行前後にカーソル位置調整よろしく
-function! s:get_main() abort
+function! s:get_mainpos() abort
 	call s:store_current_cursor()
 	call cursor(1, 1)
 	let s:l_mainpos = search('.* *main *(.*)\s*\n*{', 'n')
 	call s:load_current_cursor()
 endfunction
 
-function! s:get_function_declare_line(line_number) abort
+function! s:get_func_begtion_declare_line(line_number) abort
 	let margin = 2
 
 	let line_begin = a:line_number - margin
@@ -106,7 +104,6 @@ function! s:get_function_declare_line(line_number) abort
 endfunction
 
 function! s:is_valid_function_declare_str(str) abort
-	" NOTE
 	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 != stridx(a:str, '(')) && (stridx(a:str, '{') >= 0)
 		return 1
 	endif
@@ -114,12 +111,11 @@ function! s:is_valid_function_declare_str(str) abort
 	return 0
 endf
 
-function! s:get_func() abort
+function! s:get_func_beg() abort
 	" 1行目は別扱い
-	" let first = search('{', 'c')
 	let first = search('[^\s]\w*.*(.*)\s*{', 'c')
 	if first > 0
-		let line_str = s:get_function_declare_line(first)
+		let line_str = s:get_func_begtion_declare_line(first)
 		if s:is_valid_function_declare_str(line_str) == 1
 			call add(s:l_func_beg, first)
 		endif
@@ -130,10 +126,10 @@ function! s:get_func() abort
 
 	" 2行目以降
 	while 1
-		" let tmp = search('\w*.*(.*)\s*{')
-		let tmp = search('[^\s]\w*.*(.*)\s*{')
+		let tmp = search('\w*.*(.*)\s*{')
+		" let tmp = search('[^\s]\w*.*(.*)\s*{')
 		if tmp > first
-			let line_str = s:get_function_declare_line(tmp)
+			let line_str = s:get_func_begtion_declare_line(tmp)
 			if s:is_valid_function_declare_str(line_str) == 1
 				call add(s:l_func_beg, tmp)
 			endif
@@ -145,12 +141,11 @@ function! s:get_func() abort
 	endwhile
 endfunction
 
-function! s:get_proto() abort
+function! s:get_protoline() abort
 	let s:c_protos = []
 	let prev = 0
 	while 1
-		" let now = search('[^\s].* .*(.*) *;')
-		let now = search('[^\s].* .*[^sizeof](.*) *;')
+		let now = search('[^\s].* .*(.*) *;')
 		if now > s:l_mainpos || now <= prev
 			break
 		endif
@@ -163,7 +158,7 @@ function! s:get_proto() abort
 	endwhile
 endfunction
 
-function! s:get_protolist() abort
+function! s:get_protolinelist() abort
 	call add(s:c_now_proto, '')
 	for protoline in s:l_protos
 		let tmp = getline(protoline)
@@ -196,7 +191,7 @@ function! s:assign() abort
 
 	let s:c_func_first = []
 	for line_num in s:l_func_beg
-		let str = s:get_function_declare_line(line_num)
+		let str = s:get_func_begtion_declare_line(line_num)
 		let str = substitute(str, '\s*{.*', '', 'g')
 		let str = matchstr(str, '\%([0-9a-zA-Z_*]\+\W*\s\W*\)\+\w\+\s*(.*)') . ';'
 
@@ -219,15 +214,15 @@ endfunction
 
 function! C_prototype#refresh() abort
 	call s:init()
-	call s:get_main()
+	call s:get_mainpos()
 	call s:get_lastpre()
 	call cursor(s:l_lastpp, 1)
-	call s:get_func()
+	call s:get_func_beg()
 	call s:assign()
 
 	call cursor(1, 1)
-	call s:get_proto()
-	call s:get_protolist()
+	call s:get_protoline()
+	call s:get_protolinelist()
 	call remove(s:c_now_proto, 0)
 	" echo s:c_now_proto
 	" echo s:c_func_first
@@ -236,21 +231,21 @@ function! C_prototype#refresh() abort
 	else
 		call C_prototype#del()
 		call s:init()
-		call s:get_main()
+		call s:get_mainpos()
 		call s:make()
 	endif
 endfunction
 
 function! C_prototype#del() abort
 	call s:init()
-	call s:get_main()
+	call s:get_mainpos()
 	call s:delete()
 endfunction
 
 " Experimental(not recommended)
-function! C_prototype#makeHeader() abort
+function! C_prototype#make_header() abort
 	call s:init()
-	call s:get_func()
+	call s:get_func_beg()
 	call s:assign()
 	:new
 	call append(1, s:c_func_first)

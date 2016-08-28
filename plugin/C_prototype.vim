@@ -16,6 +16,7 @@ set cpo&vim
 
 command! -nargs=0 CPrototypeMake   call C_prototype#refresh()
 command! -nargs=0 CPrototypeDelete call C_prototype#del()
+command! -nargs=0 CPrototypeHeader call C_prototype#make_header()
 
 nnoremap <silent> <Plug>(c-prototype-make)   :<C-u>CPrototypeMake<CR>
 nnoremap <silent> <Plug>(c-prototype-delete) :<C-u>CPrototypeDelete<CR>
