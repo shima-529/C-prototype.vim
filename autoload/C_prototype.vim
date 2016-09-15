@@ -157,7 +157,11 @@ function! s:pasteAllPrototypes() abort " {{{
 		call add(newPrototypes_copy, '')
 	endfor
 	" Append prototypes.
-	call append(s:mainPosLine - 1, newPrototypes_copy)
+	if s:mainPosLine > 1
+		call append(s:mainPosLine - 1, newPrototypes_copy)
+	else
+		call append(0, newPrototypes_copy)
+	endif
 
 	call s:load_current_cursor()
 endfunction
@@ -208,7 +212,7 @@ function! s:get_func_linestion_declare_line(line_number) abort " {{{
 endfunction
 " }}}
 function! s:is_valid_function_declare_str(str) abort " {{{
-	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 != stridx(a:str, '(')) && (stridx(a:str, '{') >= 0)
+	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 != stridx(a:str, '(')) && (stridx(a:str, '{') >= 0 && (stridx(a:str, '::') == -1))
 		return 1
 	endif
 
