@@ -23,6 +23,17 @@ function! s:load_current_cursor()
 	call cursor(l, c)
 endfunction
 " }}}
+" Magic {{{
+function! s:set_magic() abort
+	let s:magicStatus = &magic
+	set magic
+endfunction
+function! s:revert_magic() abort
+	if s:magicStatus == 0
+		set nomagic
+	endif
+endfunction
+" }}}
 function! s:init_variables() abort " {{{
 	let s:funcBegLines   = []
 	let s:funcEndLines   = []
@@ -207,6 +218,7 @@ endfunction
 
 function! C_prototype#refresh() abort
 	call s:store_current_cursor()
+	call s:set_magic()
 	" For all
 	call s:init_variables()
 	call s:get_mainpos()
@@ -231,24 +243,29 @@ function! C_prototype#refresh() abort
 		call s:get_mainpos()
 		call s:pasteAllPrototypes()
 	endif
+	call s:revert_magic()
 	call s:load_current_cursor()
 endfunction
 
 function! C_prototype#del() abort
 	call s:store_current_cursor()
+	call s:set_magic()
 
 	call s:init_variables()
 	call s:get_mainpos()
 	call s:deletePrototypes()
 
+	call s:revert_magic()
 	call s:load_current_cursor()
 endfunction
 
 " Experimental(not recommended)
 function! C_prototype#make_header() abort
+	call s:set_magic()
 	call s:init_variables()
 	call s:get_func_lines()
 	call s:pasteAllPrototypes_new_prototype_string()
 	:new
 	call append(1, s:funcNewPrototypes)
+	call s:revert_magic()
 endfunction
