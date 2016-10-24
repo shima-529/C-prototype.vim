@@ -23,17 +23,6 @@ function! s:load_current_cursor()
 	call cursor(l, c)
 endfunction
 " }}}
-" Magic {{{
-function! s:set_magic() abort
-	let s:magicStatus = &magic
-	set magic
-endfunction
-function! s:revert_magic() abort
-	if s:magicStatus == 0
-		set nomagic
-	endif
-endfunction
-" }}}
 function! s:init_variables() abort " {{{
 	let s:funcBegLines   = []
 	let s:funcEndLines   = []
@@ -75,14 +64,13 @@ function! s:get_func_lines() abort " {{{
 	let matchLine = 0
 	while prevMatchLine < matchLine
 		let prevMatchLine = matchLine
-		let matchLine = search('^[^//|/*]\w*.*(.*)\s*\n*{', 'c')
-		let lineContent = s:get_func_linestion_declare_line(matchLine)
-		if s:is_valid_function_declare_str(lineContent) == 1
+		let matchLine = search('\v^[_a-zA-Z][^\(=;:]{-}[\t ]+\**[_a-zA-Z][_a-zA-Z0-9]{-}\([^;]{-}$')
 			call add(s:funcBegLines, matchLine)
-		endif
+		" endif
 
 		call search('{')
 		keepjumps normal! %
+
 
 		call add(s:funcEndLines, line('.'))
 	endwhile
@@ -145,7 +133,6 @@ function! s:pasteAllPrototypes() abort " {{{
 	call s:store_current_cursor()
 	call cursor(1,1)
 
-	call s:get_func_lines()
 	" 配列(s:funcNewPrototypes)に格納
 	call s:pasteAllPrototypes_new_prototype_string()
 	let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
@@ -203,16 +190,17 @@ function! s:get_func_linestion_declare_line(line_number) abort " {{{
 	let line_end = a:line_number + margin
 	let str = ''
 	for i in range(line_begin, line_end)
-		if match(getline(i), '\s*/') < 0
+		" NOTICE: ここはOK(nextToken来てる)
+		" if match(getline(i), '\s*/') < 0
 			let str .= substitute(getline(i), '\n', '', 'g')
-		endif
+		" endif
 	endfor
 
 	return str
 endfunction
 " }}}
 function! s:is_valid_function_declare_str(str) abort " {{{
-	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 != stridx(a:str, '(')) && (stridx(a:str, '{') >= 0 && (stridx(a:str, '::') == -1))
+	if (stridx(a:str, '	') != 0) && (stridx(a:str, '/') != 0) && (0 != stridx(a:str, '(')) && ((stridx(a:str, '{') >= 0) && (stridx(a:str, '::') == -1))
 		return 1
 	endif
 
@@ -222,7 +210,6 @@ endfunction
 
 function! C_prototype#refresh() abort
 	call s:store_current_cursor()
-	call s:set_magic()
 	" For all
 	call s:init_variables()
 	call s:get_mainpos()
@@ -237,39 +224,37 @@ function! C_prototype#refresh() abort
 	call s:get_func_lines()
 	call s:pasteAllPrototypes_new_prototype_string()
 
-	" echo s:funcPresentPrototypes
-	" echo s:funcNewPrototypes
+	" TODO: Ignoring cases
+	" let igcase = &ignorecase
+	" let &ignorecase = 0
 	if s:funcPresentPrototypes == s:funcNewPrototypes
 		echohl WarningMsg | echo 'No prototype declarations changed.' | echohl None
 	else
 		call C_prototype#del()
-		call s:init_variables()
+		" call s:init_variables()
 		call s:get_mainpos()
 		call s:pasteAllPrototypes()
 	endif
-	call s:revert_magic()
+	" let &ignorecase = igcase
+	" unlet! igcase
 	call s:load_current_cursor()
 endfunction
 
 function! C_prototype#del() abort
 	call s:store_current_cursor()
-	call s:set_magic()
 
 	call s:init_variables()
 	call s:get_mainpos()
 	call s:deletePrototypes()
 
-	call s:revert_magic()
 	call s:load_current_cursor()
 endfunction
 
 " Experimental(not recommended)
 function! C_prototype#make_header() abort
-	call s:set_magic()
 	call s:init_variables()
 	call s:get_func_lines()
 	call s:pasteAllPrototypes_new_prototype_string()
 	:new
 	call append(1, s:funcNewPrototypes)
-	call s:revert_magic()
 endfunction
