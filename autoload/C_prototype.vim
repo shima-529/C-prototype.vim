@@ -134,7 +134,7 @@ function! s:pasteAllPrototypes() abort " {{{
 	call cursor(1,1)
 
 	" 配列(s:funcNewPrototypes)に格納
-	call s:pasteAllPrototypes_new_prototype_string()
+	" call s:pasteAllPrototypes_new_prototype_string()
 	let g:c_prototype_insert_point = get(g:, 'c_prototype_insert_point', 1)
 
 	let newPrototypes_copy = s:funcNewPrototypes
@@ -233,6 +233,9 @@ function! C_prototype#refresh() abort
 		call C_prototype#del()
 		" call s:init_variables()
 		call s:get_mainpos()
+		call cursor(s:lastPreprocessLine, 1)
+		call s:get_func_lines()
+		call s:pasteAllPrototypes_new_prototype_string()
 		call s:pasteAllPrototypes()
 	endif
 	" let &ignorecase = igcase
