@@ -65,12 +65,9 @@ function! s:get_func_lines() abort " {{{
 	while prevMatchLine < matchLine
 		let prevMatchLine = matchLine
 		let matchLine = search('\v^[_a-zA-Z][^\(=;:]{-}[\t ]+\**[_a-zA-Z][_a-zA-Z0-9]{-}\([^;]{-}$')
-			call add(s:funcBegLines, matchLine)
-		" endif
-
+		call add(s:funcBegLines, matchLine)
 		call search('{')
 		keepjumps normal! %
-
 
 		call add(s:funcEndLines, line('.'))
 	endwhile
@@ -91,6 +88,9 @@ function! s:pasteAllPrototypes_new_prototype_string() abort " {{{
 		let lineNumStr = s:get_func_linestion_declare_line(lineNum)
 		let lineNumStr = substitute(lineNumStr, '\s*{.*', '', 'g')
 		let lineNumStr = matchstr(lineNumStr, '\%([0-9a-zA-Z_*]\+\W*\s\W*\)\+\w\+\s*(.*)') . ';'
+		if match(lineNumStr, '\*/') != -1
+			let lineNumStr = strpart(lineNumStr, match(lineNumStr, '\*/')+2)
+		endif
 
 		" If option is enabled, remove function argument variables.
 		" If option is enabled and lineNumStr does not contain void (i.e. if not void-parameter function)
